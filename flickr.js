@@ -25,7 +25,7 @@ var Album = function(id, title, description){
 //class methods
 Album.showAll = function(data){
   var jsonData = xmlToJson(data);
-  var response = jsonData.rsp.photosets
+  var response = jsonData.rsp.photosets;
   var totalAlbums = response['@attributes'].total;
   $('#albumNumber').html(totalAlbums);
 
@@ -33,8 +33,8 @@ Album.showAll = function(data){
     for(var i=0; i < totalAlbums; i++){
       var eachAlbum = response.photoset[i];
       var id = eachAlbum['@attributes'].id;
-      var description = eachAlbum.description['#text']
-      var title = eachAlbum.title['#text']
+      var description = eachAlbum.description['#text'];
+      var title = eachAlbum.title['#text'];
 
       var album = new Album(id, title, description);
       $('#albumList').append(album.$el);
@@ -96,12 +96,13 @@ Album.prototype.displayPhotos = function(data){
   var totalPhotos = response['@attributes'].total;
   if(totalPhotos > 0){
     $('#'+this.id).append("<table></table>");
+    var eachPhoto;
     if(totalPhotos == 1){
-      var eachPhoto = response.photo['@attributes']; 
+      eachPhoto = response.photo['@attributes']; 
       displayEachPhoto(eachPhoto, this.id);
     }else{
       for(var i=0; i<totalPhotos; i++){
-        var eachPhoto = response.photo[i]['@attributes']; 
+        eachPhoto = response.photo[i]['@attributes']; 
         displayEachPhoto(eachPhoto, this.id);
       }
     }
@@ -149,8 +150,7 @@ Photo.prototype.show = function(){
 
 Photo.prototype.showLocations = function(data){
   var jsonData = xmlToJson(data);
-  console.dir(jsonData);
-}
+};
 
 Photo.prototype.getGeoLocation = function(){
   var method = 'flickr.photos.geo.getLocation';
@@ -164,8 +164,7 @@ Photo.prototype.getGeoLocation = function(){
   request.then(function(result){
     that.showLocations(result); 
   });
-
-}
+};
 
 $(document).ready(function(){
   Album.all();

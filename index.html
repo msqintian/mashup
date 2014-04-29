@@ -2,7 +2,20 @@
 <html>
   <head>
     <title>Mashup</title>
+    <link rel='stylesheet' type='text/css' href='map.css'>
+    <link rel='stylesheet' type='text/css' href='flickr.css'>
+    <script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false"></script>
+    <script src="https://code.jquery.com/jquery-2.1.0.min.js"></script>
+    <script src="xmlConvertor.js"></script>
+    <script src="map.js"></script>
+    <script src="flickr.js"></script>
   </head>
   <body>
+    <h3>
+      You have <label id='albumNumber'>no</label> albums
+      <!-- <span><input type='button' value='Create Album' id="createAlbum"></span> -->
+    </h3>
+    <div id='albumList'></div>
+    <div id="map-canvas"></div>
   </body>
 </html>

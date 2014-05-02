@@ -1,8 +1,8 @@
 var key = '1cd3ff84f6b2ae618a952f3e6535f195';
 var secretToken = 'f06eabdecd60227b';
 var user_id = '123736673@N04';
-var api = "http://api.flickr.com/services/rest/?method=";
-var photoDisplay = "https://c2.staticflickr.com/";
+var apiHost = "http://api.flickr.com/services/rest/?method=";
+var photoDisplayHost = "https://c2.staticflickr.com/";
 
 function showAlerts(method){
   alert("There is an error when calling method " + method);
@@ -11,15 +11,10 @@ function showAlerts(method){
 var Album = function(id, title, description){
   this.id = id;
   this.title = title;
-  this.desription = description || title;
+  this.description = description || title;
   this.$el = $("<div class='album', id='" + id + "'/div>");
   this.$titleEl = $("<div class='title'>Title: <label>" + title + "</label></div>");
-  this.$showMap = $("<input type='button' value='Show On Map'></input>"); 
-  this.$titleEl.append(this.$showMap);
   this.$descriptionEl = $("<div class='title'>Description: <label>" + description + "</label></div>"); 
-  this.$showMap.on('click', function(){
-    codeAddress(description);
-  });
 };
 
 //class methods
@@ -37,10 +32,7 @@ Album.showAll = function(data){
       var title = eachAlbum.title['#text'];
 
       var album = new Album(id, title, description);
-      $('#albumList').append(album.$el);
-      $(album.$el).append(album.$titleEl);
-      $(album.$el).append(album.$descriptionEl);
-      album.getPhotos();
+      album.showOnMap();
     }
   }
 
@@ -50,7 +42,7 @@ Album.all = function(){
   var method = "flickr.photosets.getList";
   var request = $.ajax({
     type: "GET",
-    url: api + method,
+    url: apiHost + method,
     data: {api_key: key, user_id: user_id},
     dataType: 'xml',
   });
@@ -65,7 +57,7 @@ Album.create = function(title, description){
     var method = "flickr.photosets.create";
     var request = $.ajax({
       type: "POST",
-      url: api + method,
+      url: apiHost + method,
       data: {api_key: key, title: title, description: description},
       dataType: 'xml',
     });
@@ -78,6 +70,61 @@ Album.create = function(title, description){
 
 };
 
+Album.prototype.showPhotos = function(data,marker){
+  function displayEachPhoto(eachPhoto, albumId){
+    var link = photoDisplayHost + eachPhoto.farm + "/" + eachPhoto.server + "/" + eachPhoto.id + "_" + eachPhoto.secret + ".jpg"; 
+    var photo = new Photo(eachPhoto.id, eachPhoto.title, link, albumId);
+    return photo.el;
+  }
+  var jsonData = xmlToJson(data);
+  var response = jsonData.rsp.photoset;
+  var totalPhotos = response['@attributes'].total;
+  var photoEls = "";
+  if(totalPhotos > 0){
+    var eachPhoto;
+    if(totalPhotos == 1){
+      eachPhoto = response.photo['@attributes']; 
+      photoEls += displayEachPhoto(eachPhoto, this.id);
+    }else{
+      for(var i=0; i<totalPhotos; i++){
+        eachPhoto = response.photo[i]['@attributes']; 
+        photoEls += displayEachPhoto(eachPhoto, this.id);
+      }
+    }
+  }
+  var infoWindow = new google.maps.InfoWindow({
+    content: "<div class='title' id=" + this.id + ">" + this.title + "</div>" 
+      + photoEls,
+    maxWidth: 400
+  });
+  infoWindow.open(map,marker);
+};
+
+Album.prototype.showOnMap = function(){
+  var that = this;
+  var geocoder = new google.maps.Geocoder();
+  geocoder.geocode( { 'address': this.description}, function(results, status) {
+    if (status == google.maps.GeocoderStatus.OK) {
+      map.setCenter(results[0].geometry.location);
+      var marker = new google.maps.Marker({
+          map: map,
+          animation: google.maps.Animation.DROP,
+          position: results[0].geometry.location
+      });
+      google.maps.event.addListener(marker, 'mouseover', function(){
+        if($("#"+that.id).length === 0){
+          var request = that.getPhotos();
+          request.then(function(data){
+            that.showPhotos(data,marker);
+          });
+        }
+      });
+    } else {
+      alert("Geocode was not successful for the following reason: " + status);
+    }
+  });
+};
+
 Album.prototype.isValid = function(){
   return (this.title && this.title.length > 0);
 };
@@ -85,42 +132,16 @@ Album.prototype.isValid = function(){
 Album.prototype.addPhotos = function(){
 };
 
-Album.prototype.displayPhotos = function(data){
-  function displayEachPhoto(eachPhoto, albumId){
-    var link = photoDisplay + eachPhoto.farm + "/" + eachPhoto.server + "/" + eachPhoto.id + "_" + eachPhoto.secret + ".jpg"; 
-    var photo = new Photo(eachPhoto.id, eachPhoto.title, link, albumId);
-    photo.show();
-  }
-  var jsonData = xmlToJson(data);
-  var response = jsonData.rsp.photoset;
-  var totalPhotos = response['@attributes'].total;
-  if(totalPhotos > 0){
-    $('#'+this.id).append("<table></table>");
-    var eachPhoto;
-    if(totalPhotos == 1){
-      eachPhoto = response.photo['@attributes']; 
-      displayEachPhoto(eachPhoto, this.id);
-    }else{
-      for(var i=0; i<totalPhotos; i++){
-        eachPhoto = response.photo[i]['@attributes']; 
-        displayEachPhoto(eachPhoto, this.id);
-      }
-    }
-  }
-};
-
 Album.prototype.getPhotos = function(){
   var method = "flickr.photosets.getPhotos";
   var that = this;
   var request = $.ajax({
     type: "GET",
-    url: api + method,
+    url: apiHost + method,
     data: {api_key: key, photoset_id: this.id},
     dataType: 'xml',
   });
-  request.then(function(result){
-    that.displayPhotos(result); 
-  });
+  return request;
 };
 
 
@@ -130,40 +151,11 @@ var Photo = function(id, title, link, albumId){
   this.title = title;
   this.link = link;
   this.albumId = albumId;
-  this.$el = $("<td id='"+ this.id + "'><img src=" + link + ">" + "<div class='center'>" + this.title + "</div></td>");
-  this.$el.on('click', this.getGeoLocation.bind(this));
-};
-
-//class methods
-Photo.findByAlbumName = function(albumName){
-};
-
-Photo.findById = function(id){
+  this.el = "<a href=" + link + " target='_blank'><img id=" + this.id + " src=" + link + "></a>"
+  + "<div class='center'>" + this.title + "</div>";
 };
 
 Photo.prototype.create = function(){
-};
-
-Photo.prototype.show = function(){
-  $('#'+this.albumId+" table").append(this.$el);
-};
-
-Photo.prototype.showLocations = function(data){
-  var jsonData = xmlToJson(data);
-};
-
-Photo.prototype.getGeoLocation = function(){
-  var method = 'flickr.photos.geo.getLocation';
-  var that = this;
-  var request = $.ajax({
-    type: "GET",
-    url: api + method,
-    data: {api_key: key, photo_id: this.id},
-    dataType: 'xml',
-  });
-  request.then(function(result){
-    that.showLocations(result); 
-  });
 };
 
 $(document).ready(function(){

@@ -1,6 +1,7 @@
 img {
-  width: 200px;
-  height: 150px;
+  width: 100px;
+  height: 50px;
+  display: inline-block;
 }
 .center {
   text-align: center;

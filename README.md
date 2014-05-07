@@ -1,3 +1,11 @@
+In this project, I called APIs from flickrs and google. The goal of this project is to grab my albums
+stored in flickrs, and list all photos in each album. When I show these photos to my friends, I can 
+click 'show on map' to show them where these pictures were taken. It is also nice to see the map of 
+my footprints.
+
+Currently, my credentials are hard coded. It would be nice to have an authentication function. Then
+this app can be used by any one who has an account with flickrs.
+
 # Mashup project
 
 This project is open-ended!  Build a site that uses data from at least one external API in an interesting way.  In other words, the JS code should be **non-trivial**.  That being said... start simple!  No server-side coding is required, but feel free to create a backend in whatever language if you like, if you need one.
